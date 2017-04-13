@@ -1,0 +1,12 @@
+package Common;
+
+public enum ACTION_TYPE {
+	USER_LOGIN,
+	USER_LEAVE,
+	GROUP_MESSAGE,
+	BEAT,
+	HANDSHAKE,
+	GET_LIST,
+	
+	UNKNOWN,
+}
