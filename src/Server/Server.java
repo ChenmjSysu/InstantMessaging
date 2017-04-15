@@ -86,7 +86,7 @@ public class Server {
 		LoginProtocol protocol = new LoginProtocol(inFromClient);
 		InetAddress IP = connectionSocket.getInetAddress();
 		String userInfo = new UserItem(protocol.userName, IP, protocol.tcpPort, protocol.udpPort).toString();
-		Util.log(userInfo);
+
 		int ret = checkUser(protocol.userName, protocol.pwd);
 		// userName and pwd are valid
 		if (ret == 0) {
@@ -125,7 +125,6 @@ public class Server {
 						String clientSentence;
 						while((clientSentence = inFromClient.readUTF()) == null
 								&& clientSentence.length() <= 0) {
-							Util.log("--waiting--");
 						}
 						Util.log("-----\n" + clientSentence + "-----");
 						PROTOCOL_MESSAGE_TYPE state = Util.getAction(clientSentence);

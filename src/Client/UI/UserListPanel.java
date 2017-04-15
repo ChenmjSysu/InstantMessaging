@@ -12,17 +12,17 @@ import javax.swing.JScrollPane;
 
 import Common.Util;
 
-public class UserListPane extends JPanel {
+public class UserListPanel extends JPanel {
 	public String cunrrentUser = null;
 	private ChatRoom chat;
-	public UserListPane(Map<String, String> userList) {
+	public UserListPanel(Map<String, String> userList) {
 		init();
 		for(String name : userList.keySet()) {
 			this.addUser(name);
 		}
 	}
 	
-	public UserListPane(ChatRoom c) {
+	public UserListPanel(ChatRoom c) {
 		init();
 		chat = c;
 		this.setLayout(new GridLayout(10,  1));
@@ -84,17 +84,19 @@ public class UserListPane extends JPanel {
 			@Override
 			public void mouseClicked(MouseEvent e) {
 				// TODO Auto-generated method stub
-				UserListPane listPanel = (UserListPane)((User)e.getSource()).getParent();
+				UserListPanel listPanel = (UserListPanel)((User)e.getSource()).getParent();
 				
 				String cur = listPanel.cunrrentUser;
 				for (int i = 0; i < listPanel.getComponentCount(); i++) {
 					User tempUser = (User) listPanel.getComponent(i);
-					if (cur != null && cur == tempUser.name) {
+					if (cur != null && cur == tempUser.name) { //将之前的item设置为灰色
 						tempUser.setBackground(Color.GRAY);
 					}
+					//将当前点击的设置为红色
 					((User)e.getSource()).setBackground(Color.RED);
 					listPanel.cunrrentUser = ((User)e.getSource()).name;
-					chat.titleLabel.setText(listPanel.cunrrentUser);
+			
+					chat.showCurrentUserMessage(listPanel.cunrrentUser);
 					if (tempUser.haveNewMessage == true) {
 						tempUser.setText(tempUser.name);
 						tempUser.haveNewMessage = false;

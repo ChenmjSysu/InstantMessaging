@@ -36,17 +36,18 @@ import javax.swing.event.ListSelectionListener;
 
 import Client.Client;
 import Common.MessageItem;
+import Common.MessageItem.ALIGN_TYPE;
 import Common.Util;
 
 public class ChatRoom extends JFrame {
-    private JTextArea messageShowTextArea;
-    public JTextField messageSendTextArea;
+    private HistoryShowPanel historyPanel;
+    public JTextArea messageSendTextArea;
     public JButton sendButton;
     
     public Map<String, String> user2EditMessageList;
     public Map<String, List<MessageItem>> user2SendMessageList;
     
-    public UserListPane userListPane;
+    public UserListPanel userListPane;
     public JLabel titleLabel;
 	
 	public static void main(String[] args) {
@@ -82,24 +83,26 @@ public class ChatRoom extends JFrame {
 	private void init() {
 		Container container = this.getContentPane();
 		
-		userListPane = new UserListPane(this);
+		userListPane = new UserListPanel(this);
 		
 		titleLabel = new JLabel("title");
 		
-		messageShowTextArea = new JTextArea();
-		messageShowTextArea.setEditable(false);
-		messageSendTextArea = new JTextField();
+		historyPanel = new HistoryShowPanel();
+
+		messageSendTextArea = new JTextArea();
         sendButton = new JButton("Send");
-        
-        messageShowTextArea.setText("");
-        messageSendTextArea.setText("");
+   
         
         container.setLayout(new GridBagLayout());
         
-        container.add(userListPane, new MyGridBagConstraints(0, 0, 1, 4).setIpad(70, 0).setWeight(20, 100));
+        JScrollPane userListScroll = new JScrollPane(userListPane);
+        JScrollPane historyScroll = new JScrollPane(historyPanel);
+        JScrollPane sendScroll = new JScrollPane(messageSendTextArea);
+        
+        container.add(userListScroll, new MyGridBagConstraints(0, 0, 1, 4).setIpad(70, 0).setWeight(20, 100));
         container.add(titleLabel, new MyGridBagConstraints(1, 0, 1, 1).setInsets(5, 20, 5, 20).setWeight(80, 20).setAnchor(MyGridBagConstraints.CENTER));
-        container.add(messageShowTextArea, new MyGridBagConstraints(1, 1).setIpad(0, 50).setWeight(80, 600));
-        container.add(messageSendTextArea, new MyGridBagConstraints(1, 2).setIpad(0, 20).setWeight(80, 260));
+        container.add(historyScroll, new MyGridBagConstraints(1, 1).setIpad(0, 50).setWeight(80, 600));
+        container.add(sendScroll, new MyGridBagConstraints(1, 2).setIpad(0, 20).setWeight(80, 260));
         container.add(sendButton, new MyGridBagConstraints(1, 3).setIpad(0, 20).setWeight(80, 20));
 	}
 	
@@ -123,31 +126,29 @@ public class ChatRoom extends JFrame {
 		user2EditMessageList.put(name, new String());
 	}
 	
-	public void addP2PTextMessage(String user, String from, String dateStr, String message) {
-		MessageItem m = new MessageItem(message, dateStr, from);
+	public void addP2PTextMessage(String user, String from, String dateStr, String message, ALIGN_TYPE a) {
+		MessageItem m = new MessageItem(message, dateStr, from, a);
+		//Util.log(user + " " + message + " " + from);
 		((List<MessageItem>)user2SendMessageList.get(user)).add(m);
 		// 如果当前打开的对话框就是该用户的 那么直接在显示框显示
-		if (from.equals(titleLabel.getText())) {
-			addMessage2TextArea(m);
+		if (user.equals(titleLabel.getText())) {
+			historyPanel.addContent(m);
 		}
-		messageShowTextArea.revalidate();
+		else { // 在对应的用户名字后面加上新消息的提示
+			userListPane.setHaveNewMessage(user);
+		}
+
+		historyPanel.revalidate();
 	}
 	
 	public void showCurrentUserMessage(String name) {
 		// 如果当前的对话框与点击的不一样，也就是要切换
 		if (!name.equals(titleLabel.getText())) {
-			// 先清空
-			messageShowTextArea.setText("");
 			titleLabel.setText(name);
-			for (MessageItem item : user2SendMessageList.get(name)) {
-				addMessage2TextArea(item);
-			}
-			messageShowTextArea.revalidate();
+			historyPanel.setContent(user2SendMessageList.get(name));
+			historyPanel.revalidate();
 		}
 	}
-	
-	public void addMessage2TextArea(MessageItem item) {
-		messageShowTextArea.append(item.fromUser + " : " + item.message + "\n");		
-	}
+
 	
 }

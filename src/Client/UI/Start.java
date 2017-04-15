@@ -29,7 +29,9 @@ import java.awt.Toolkit;
 
 import Client.Client;
 import Client.UI.*;
+import Common.MessageItem.ALIGN_TYPE;
 import Common.Util;
+import javafx.scene.control.Alert.AlertType;
 
 public class Start {
 	private Client client;
@@ -92,18 +94,24 @@ public class Start {
 		sendButton.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				String message = chat.messageSendTextArea.getText();
-				String userName = chat.titleLabel.getText();
-				
-				try {
-					client.sendP2PMessage(userName, message);
-					chat.addP2PTextMessage(chat.titleLabel.getText(), client.userName, "", message);
-				} catch (IOException e1) {
-					// TODO Auto-generated catch block
-					e1.printStackTrace();
-				}
+				sendMessage();
 			}
 		});
+
+	}
+	
+	public void sendMessage() {
+		String message = chat.messageSendTextArea.getText();
+		String userName = chat.titleLabel.getText();
+		
+		try {
+			client.sendP2PMessage(userName, message);
+			chat.addP2PTextMessage(chat.titleLabel.getText(), client.userName, "", message, ALIGN_TYPE.right);
+			chat.messageSendTextArea.setText("");
+		} catch (IOException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
 	}
 	
 	class CheckOnlineUserList extends TimerTask {

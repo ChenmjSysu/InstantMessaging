@@ -15,6 +15,7 @@ import Common.PROTOCOL_MESSAGE_TYPE;
 import Common.UserItem;
 import Common.UserList;
 import Common.Util;
+import Common.MessageItem.ALIGN_TYPE;
 import Protocol.*;
 import Protocol.UserStatusUpdateProtocol.USER_STATUS_TYPE;
 
@@ -218,11 +219,11 @@ public class Client {
 		String info = userList.get(toUser);
 		UserItem user = new UserItem(toUser, info);
 		
-		P2PTextMessageProtocol protocol = new P2PTextMessageProtocol(toUser, message);
+		P2PTextMessageProtocol protocol = new P2PTextMessageProtocol(userName, message);
 		byte[] buf = protocol.getContent().getBytes();
 		
 		DatagramPacket sendPacket = new DatagramPacket(buf, buf.length, user.ip, user.udp);
-		Util.log("send " + message + " to " + toUser + " " + user.ip.getHostAddress() + ":" + user.udp);
+
 		udpSocket.send(sendPacket);
 		
 	}
@@ -280,8 +281,6 @@ public class Client {
 		public void udpProcess(final DatagramSocket socket, String sentence) throws IOException {
 			new Thread(new Runnable() {
 				public void run() {
-					boolean flag = true;
-					
 					try {
 						timer.purge();
 						
@@ -290,8 +289,7 @@ public class Client {
 						switch (state) {
 						case P2P_TEXT_MESSAGE:
 							P2PTextMessageProtocol protocol = new P2PTextMessageProtocol(sentence);
-							Util.log("get " + protocol.message + " from " + protocol.userName);
-							startUI.chat.addP2PTextMessage(protocol.userName, protocol.userName, protocol.dateStr, protocol.message);
+							startUI.chat.addP2PTextMessage(protocol.userName, protocol.userName, protocol.dateStr, protocol.message, ALIGN_TYPE.left);
 							break;
 						}
 						
