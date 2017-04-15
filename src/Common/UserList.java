@@ -6,7 +6,7 @@ import java.util.Map;
 import java.util.Set;
 
 public class UserList {
-	private Map<String, String> userList = new HashMap<String, String>();
+	public Map<String, String> userList = new HashMap<String, String>();
 	
 	public UserList(Map<String, String> l) {
 		userList = l; 
@@ -14,7 +14,8 @@ public class UserList {
 	
 	public UserList(String str) {
 		String[] opts = str.split(Util.PROTOCAL_LINEEND);
-		for (String s : opts) {
+		for (int i = 2; i < opts.length; i++) {
+			String s = opts[i];
 			String[] parts = s.split(Util.PROTOCAL_SP);
 			String key = parts[0];
 			String val = parts[1] + Util.PROTOCAL_SP + parts[2] + Util.PROTOCAL_SP + parts[3];

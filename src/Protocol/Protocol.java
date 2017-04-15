@@ -26,7 +26,7 @@ public class Protocol {
 	String sp = Util.PROTOCAL_SP;
 	String crlf = Util.PROTOCAL_LINEEND;
 	String ver = "";
-	String dateStr;
+	public String dateStr;
 	PROTOCOL_MESSAGE_TYPE messageType;
 	
 	public String getContent() { return contents; }

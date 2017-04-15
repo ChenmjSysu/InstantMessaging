@@ -17,7 +17,7 @@ import Common.Util;
  */
 
 public class BeatProtocol extends Protocol {
-	String userName;
+	public String userName;
 	public BeatProtocol(String str) {
 		String opt[] = str.split(Util.PROTOCAL_LINEEND);
 		if (opt.length > 1) {
@@ -25,7 +25,8 @@ public class BeatProtocol extends Protocol {
 			ver = opt[0].split(Util.PROTOCAL_SP)[0];
 			dateStr = opt[0].split(Util.PROTOCAL_SP)[0];
 			
-			if (type == PROTOCOL_MESSAGE_TYPE.HELLO) {
+			if (type == PROTOCOL_MESSAGE_TYPE.BEAT) {
+				
 				userName = opt[2];
 			}
 		}
@@ -35,7 +36,7 @@ public class BeatProtocol extends Protocol {
 			
 			super.ver = "5C";
 			super.dateStr = Util.getFormattedCurrentDateTime();
-			super.messageType = PROTOCOL_MESSAGE_TYPE.HELLO;
+			super.messageType = PROTOCOL_MESSAGE_TYPE.BEAT;
 			
 			super.contents = super.ver + super.sp + super.dateStr + super.crlf
 					+ super.messageType + super.crlf

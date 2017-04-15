@@ -10,6 +10,7 @@ import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.UnknownHostException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
@@ -19,10 +20,14 @@ import java.util.TimerTask;
 
 import Common.ACTION_TYPE;
 import Common.PROTOCOL_MESSAGE_TYPE;
+import Common.UserItem;
 import Common.Util;
+import Protocol.BeatProtocol;
 import Protocol.GetUserListProtocol;
 import Protocol.HelloProtocol;
 import Protocol.LoginProtocol;
+import Protocol.UserStatusUpdateProtocol;
+import Protocol.UserStatusUpdateProtocol.USER_STATUS_TYPE;
 
 public class Server {
 	// key: userName val: socket
@@ -34,42 +39,42 @@ public class Server {
 	
 	Timer timer = new Timer();
 	
-	private static void startTCPSocket() throws Exception {
-		int serverPort = 6789;
-		String clientSentence;
-		String modifiedSentence;
-		ServerSocket welcomeSocket = new ServerSocket(serverPort);
-		System.out.println("start Server(TCP) in port: " + serverPort);
-		while(true) {
-			Socket connectionSocket = welcomeSocket.accept();
-			BufferedReader inFromClient = new BufferedReader(new InputStreamReader(connectionSocket.getInputStream()));
-			DataOutputStream outToClient = new DataOutputStream(connectionSocket.getOutputStream());
-			
-			clientSentence = inFromClient.readLine();
-			modifiedSentence = clientSentence.toUpperCase() + "\n";
-			int a;
-			outToClient.writeBytes(modifiedSentence);
-		}
-	}
-	
-	private static void startUDPServer() throws Exception {
-		int serverPort = 9876;
-		DatagramSocket serverSocket = new DatagramSocket(serverPort);
-		byte[] receiveData = new byte[1024];
-		byte[] sendData = new byte[1024];
-		while(true) {
-			DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
-			serverSocket.receive(receivePacket);
-			String sentence = new String(receivePacket.getData());
-			InetAddress IPAddress = receivePacket.getAddress();
-			int clientPort = receivePacket.getPort();
-			String modifiedSentence = sentence.toUpperCase();
-			sendData = modifiedSentence.getBytes();
-			DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, IPAddress, clientPort);
-			serverSocket.send(sendPacket);
-		}
-	}
-	
+//	private static void startTCPSocket() throws Exception {
+//		int serverPort = 6789;
+//		String clientSentence;
+//		String modifiedSentence;
+//		ServerSocket welcomeSocket = new ServerSocket(serverPort);
+//		System.out.println("start Server(TCP) in port: " + serverPort);
+//		while(true) {
+//			Socket connectionSocket = welcomeSocket.accept();
+//			BufferedReader inFromClient = new BufferedReader(new InputStreamReader(connectionSocket.getInputStream()));
+//			DataOutputStream outToClient = new DataOutputStream(connectionSocket.getOutputStream());
+//			
+//			clientSentence = inFromClient.readLine();
+//			modifiedSentence = clientSentence.toUpperCase() + "\n";
+//			int a;
+//			outToClient.writeBytes(modifiedSentence);
+//		}
+//	}
+//	
+//	private static void startUDPServer() throws Exception {
+//		int serverPort = 9876;
+//		DatagramSocket serverSocket = new DatagramSocket(serverPort);
+//		byte[] receiveData = new byte[1024];
+//		byte[] sendData = new byte[1024];
+//		while(true) {
+//			DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
+//			serverSocket.receive(receivePacket);
+//			String sentence = new String(receivePacket.getData());
+//			InetAddress IPAddress = receivePacket.getAddress();
+//			int clientPort = receivePacket.getPort();
+//			String modifiedSentence = sentence.toUpperCase();
+//			sendData = modifiedSentence.getBytes();
+//			DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, IPAddress, clientPort);
+//			serverSocket.send(sendPacket);
+//		}
+//	}
+//	
 
 
 	private int checkUser(String name, String pwd) {
@@ -78,38 +83,34 @@ public class Server {
 	
 	private String userLogin(String inFromClient, Socket connectionSocket) throws IOException {
 		String status = "";
-		String options[] = inFromClient.split(Util.PROTOCAL_LINEEND);
-		String userName = options[1];
-		String pwd = options[2];
-		String port = options[3];
-		String IP = connectionSocket.getInetAddress().getHostAddress();
-		String userIPPort = IP + ":" + port;
-		int ret = checkUser(userName, pwd);
+		LoginProtocol protocol = new LoginProtocol(inFromClient);
+		InetAddress IP = connectionSocket.getInetAddress();
+		String userInfo = new UserItem(protocol.userName, IP, protocol.tcpPort, protocol.udpPort).toString();
+		Util.log(userInfo);
+		int ret = checkUser(protocol.userName, protocol.pwd);
 		// userName and pwd are valid
 		if (ret == 0) {
-			userList.put(userName, userIPPort);
+			// 保存用户的信息
+			userList.put(protocol.userName, userInfo);
 			LoginProtocol p = new LoginProtocol(PROTOCOL_MESSAGE_TYPE.LOGIN_SUCCESS);
 			status = p.getContent();
-			beatTime.put(userName, "NO");
-			updateOnlineList(updateUserList(userName, 1, port, connectionSocket));
-			onlineUserList.put(userName, connectionSocket);
+			beatTime.put(protocol.userName, "YES");
+			// 向其他用户发送新用户登录消息
+			updateOnlineList(genUserUpdateMessage(protocol.userName, USER_STATUS_TYPE.ONLINE));
+			// 保存新用户的socket，以后续向该用户发送消息
+			onlineUserList.put(protocol.userName, connectionSocket);
 			for(String key : onlineUserList.keySet()) {
 				System.out.println(key);
 			}
-			timer.schedule(new CheckBeat(userName), 1000, 10000);
+			// 开始监测该用户的beat 每10s监测一次
+			timer.schedule(new CheckBeat(protocol.userName), 1000, 10000);
 			return status;
 		}
 		
 		return status;
 	}
 	
-	// 从客户端发过来的消息获取用户名
-	private String getUserName(String message){
-        
-        String []options = message.split("[\\n\\r]+")[0].split(" ");
-        return options[2];
-    }
-	
+
 	// 处理单个TCP连接的线程
 	private void process(final Socket connectionSocket) throws IOException {
 		new Thread(new Runnable() {
@@ -128,9 +129,10 @@ public class Server {
 						}
 						Util.log("-----\n" + clientSentence + "-----");
 						PROTOCOL_MESSAGE_TYPE state = Util.getAction(clientSentence);
-						if (state == PROTOCOL_MESSAGE_TYPE.LOGIN_REQUEST) {
-							userName = getUserName(clientSentence);
-						}
+//						if (state == PROTOCOL_MESSAGE_TYPE.LOGIN_REQUEST) {
+//							LoginProtocol protocol = new LoginProtocol(clientSentence);
+//							userName = protocol.userName;
+//						}
 						switch (state) {
 						case HELLO:
 							//handshake  say hello
@@ -150,6 +152,11 @@ public class Server {
                             outToClient.flush();
 						case BEAT:
 							//keep beat
+							BeatProtocol beatProtocol = new BeatProtocol(clientSentence);
+				            userName = beatProtocol.userName;
+				            beatTime.put(userName,"YES");
+							break;
+						default:
 							break;
 							
 						}
@@ -161,41 +168,20 @@ public class Server {
 		}).start();
 	}
 	
-	private String updateUserList(String Name, int i, String Port_Num,  Socket connectionSocket){
-        String Status = "";
-
-        String Request_Line = "";
-
-
-        Date Current_Date = new Date(System.currentTimeMillis());
-        SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
-        String DateStr = formatter.format(Current_Date);
-        String IP_Num;
-        if (connectionSocket != null)
-            IP_Num = connectionSocket.getInetAddress().getHostAddress();
-
-        else
-            IP_Num = "8888";
-        String Header_Line = "Date" + " " + DateStr + "Content-Length" + " " + "0" + "\r\n";
-
-        String Entity_Body = "\r\n";
-        if (i == 0) 
-            Request_Line = "5c1.0" + " " + "UPDATE" + " " + "0" + " " + Name + " " +  IP_Num + "," + Port_Num + "\r\n";
-        else
-            Request_Line = "5c1.0" + " " + "UPDATE" + " " + "1" + " " + Name + " "  + IP_Num + "," + Port_Num + "\r\n";
-
-        Status += Request_Line + Header_Line + Entity_Body;
-        return Status;
+	// 生成用户状态更新的消息
+	private String genUserUpdateMessage(String user, USER_STATUS_TYPE type) throws UnknownHostException{
+        UserItem info = new UserItem(user, userList.get(user));
+        UserStatusUpdateProtocol protocol = new UserStatusUpdateProtocol(info, type);
+        return protocol.getContent();
 	}
 	
-	private void updateOnlineList(String status) throws  IOException{
-        
+	// 发送消息给全部在线用户，来更新用户的在线列表
+	private void updateOnlineList(String message) throws  IOException{
         try {
             for(String key : onlineUserList.keySet()) {
-                System.out.println("---------------------------------");
                 Socket _socket = onlineUserList.get(key);
                 DataOutputStream outToClient = new DataOutputStream(_socket.getOutputStream());
-                outToClient.writeUTF(status + '\n');
+                outToClient.writeUTF(message + '\n');
                 outToClient.flush();
             }
         }catch(Exception e){
@@ -203,6 +189,8 @@ public class Server {
         }
     }
 	
+	// 每当有新用户登录 就开始不断监测新用户的beat
+	// 每个用户一个线程，如果监测到这个用户的beat为no，则向其他用户发送下线消息，结束线程
 	class CheckBeat extends TimerTask {
 		private String userName;
 		public CheckBeat(String userName) {
@@ -213,10 +201,10 @@ public class Server {
 			try {
 				if (beatTime.get(userName) == null) this.cancel();
 				else if (beatTime.get(userName).equals("NO")) {
+					String status = genUserUpdateMessage(userName, USER_STATUS_TYPE.OFFLINE);
 					userList.remove(userName);
-					Socket failSocket = onlineUserList.get(userName);
+					//Socket failSocket = onlineUserList.get(userName);
 					beatTime.remove(userName);
-					String status = updateUserList(userName, 0, "8888", failSocket);
 					try {
 						updateOnlineList(status);
 					} catch(Exception e) {
@@ -228,15 +216,19 @@ public class Server {
 					beatTime.put(userName, "NO");
 				}
 			} catch(Exception e) {
+				Util.log("Error");
+				e.printStackTrace();
 				userList.remove(userName);
-				Socket failSocket = onlineUserList.get(userName);
+				//Socket failSocket = onlineUserList.get(userName);
 				onlineUserList.remove(userName);
 				beatTime.remove(userName);
-				String status = updateUserList(userName, 0, "8888", failSocket);
+				String status;
 				try {
+					status = genUserUpdateMessage(userName, USER_STATUS_TYPE.OFFLINE);
 					updateOnlineList(status);
-				} catch (Exception ee) {
-					ee.printStackTrace();
+				} catch (Exception e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
 				}
 				this.cancel();
 			}

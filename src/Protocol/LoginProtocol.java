@@ -23,10 +23,10 @@ import Common.PROTOCOL_MESSAGE_TYPE;
  */
 
 public class LoginProtocol extends Protocol {
-	String userName;
-	String pwd;
-	int tcpPort;
-	int udpPort;
+	public String userName;
+	public String pwd;
+	public int tcpPort;
+	public int udpPort;
 
 	public LoginProtocol(String name, String password, int tcp, int udp) {
 		userName = name;
