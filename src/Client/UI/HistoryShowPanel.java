@@ -1,6 +1,7 @@
 package Client.UI;
 
 import java.awt.Color;
+import java.awt.Dimension;
 import java.awt.GridLayout;
 import java.awt.LayoutManager;
 import java.util.List;
@@ -14,16 +15,17 @@ import javax.swing.JTextField;
 
 import Common.MessageItem;
 import Common.MessageItem.ALIGN_TYPE;
+import java.awt.Component;
 
 public class HistoryShowPanel extends JPanel {
 	public HistoryShowPanel() {
 		this.setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
 		this.setBackground(Color.WHITE);
-		this.addContent(new MessageItem("message", "now", "chen", ALIGN_TYPE.left));
-		this.addContent(new MessageItem("message", "now", "chen", ALIGN_TYPE.left));
-		this.addContent(new MessageItem("MESSAGE", "now", "chen", ALIGN_TYPE.right));
-		this.addContent(new MessageItem("我", "now", "chen", ALIGN_TYPE.left));
-		this.addContent(new MessageItem("message", "now", "chen", ALIGN_TYPE.left));
+		//this.addContent(new MessageItem("message", "now", "chen", ALIGN_TYPE.left));
+		//this.addContent(new MessageItem("message", "now", "chen", ALIGN_TYPE.right));
+		//this.addContent(new MessageItem("MESSAGE", "now", "chen", ALIGN_TYPE.right));
+		//this.addContent(new MessageItem("我", "now", "chen", ALIGN_TYPE.left));
+		//this.addContent(new MessageItem("message", "now", "chen", ALIGN_TYPE.left));
 		
 	}
 	
@@ -68,7 +70,10 @@ public class HistoryShowPanel extends JPanel {
 				message.setHorizontalAlignment(JLabel.LEFT);
 			}
 			
+			//this.setPreferredSize (new Dimension (110, 110));
+			this.setMaximumSize(new Dimension(20000, 50));
 			this.setBackground(Color.WHITE);
+			
 			this.setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
 			this.add(userName);
 			this.add(message);

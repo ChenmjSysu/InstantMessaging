@@ -21,6 +21,7 @@ import java.util.ListIterator;
 import java.util.Map;
 import java.util.Timer;
 
+import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
@@ -44,17 +45,18 @@ public class ChatRoom extends JFrame {
     public JTextArea messageSendTextArea;
     public JButton sendButton;
     
-    public Map<String, String> user2EditMessageList;
-    public Map<String, List<MessageItem>> user2SendMessageList;
+    public Map<String, String> user2EditMessageList; // 对每个用户的草稿
+    public Map<String, List<MessageItem>> user2SendMessageList; // 对每个用户聊天窗口的历史消息
     
     public UserListPanel userListPane;
     public JLabel titleLabel;
+    public Start start;
 	
 	public static void main(String[] args) {
 		EventQueue.invokeLater(new Runnable() {
 			public void run() {
 				try {
-					ChatRoom frame = new ChatRoom();
+					ChatRoom frame = new ChatRoom(null);
 				} catch (Exception e) {
 					e.printStackTrace();
 				}
@@ -62,8 +64,9 @@ public class ChatRoom extends JFrame {
 	});
 	}
 	
-	public ChatRoom() {
-		this.setTitle("Chat");
+	public ChatRoom(Start s) {
+		start = s;
+		this.setTitle(Util.CHAT_WIN_TITLE);
 		
 		this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		// 绝对定位
@@ -98,6 +101,7 @@ public class ChatRoom extends JFrame {
         JScrollPane userListScroll = new JScrollPane(userListPane);
         JScrollPane historyScroll = new JScrollPane(historyPanel);
         JScrollPane sendScroll = new JScrollPane(messageSendTextArea);
+    
         
         container.add(userListScroll, new MyGridBagConstraints(0, 0, 1, 4).setIpad(70, 0).setWeight(20, 100));
         container.add(titleLabel, new MyGridBagConstraints(1, 0, 1, 1).setInsets(5, 20, 5, 20).setWeight(80, 20).setAnchor(MyGridBagConstraints.CENTER));
@@ -106,8 +110,8 @@ public class ChatRoom extends JFrame {
         container.add(sendButton, new MyGridBagConstraints(1, 3).setIpad(0, 20).setWeight(80, 20));
 	}
 	
-	public void setList(Map<String, String> map) {
-		userListPane.setUserList(map);
+	public void setList(Map<String, String> map, String curName) {
+		userListPane.setUserList(map, curName);
 		
 		for (String name : map.keySet()) {
 			user2SendMessageList.put(name, new ArrayList<MessageItem>());
@@ -116,7 +120,10 @@ public class ChatRoom extends JFrame {
 	}
 	
 	public void removeUser(String name) {
-		
+		user2EditMessageList.remove(name);
+		user2SendMessageList.remove(name);
+		userListPane.removeUser(name);
+		userListPane.revalidate();
 	}
 	
 	public void addUser(String name) {

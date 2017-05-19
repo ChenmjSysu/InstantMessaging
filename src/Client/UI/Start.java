@@ -34,10 +34,11 @@ import Common.Util;
 import javafx.scene.control.Alert.AlertType;
 
 public class Start {
-	private Client client;
+	public Client client;
     Timer timer = new Timer();
     
 	public Login login;
+	public Regist regist;
 	public ChatRoom chat;
 	
 	public static void main(String[] args) {
@@ -55,14 +56,16 @@ public class Start {
 	
 	public Start() throws Exception {
 		client = new Client(this);
-		login = new Login();
-		chat = new ChatRoom();
+		login = new Login(this);
+		regist = new Regist(this);
+		chat = new ChatRoom(this);
 		
 		chat.setVisible(false);
-		JButton loginButton = login.loginButton;
+		regist.setVisible(false);
+
 		
 		// 登录按钮的响应函数
-		loginButton.addActionListener(new ActionListener() {
+		login.loginButton.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				String pwd = login.pwdTextField.getText();
@@ -73,6 +76,14 @@ public class Start {
 						if (flag) { // 登录成功 关闭登录窗口 打开聊天窗口
 							login.setVisible(false);
 							chat.setVisible(true);
+							chat.setTitle(client.userName + chat.getTitle());
+							if (chat.user2EditMessageList.size() <= 1) {
+								// chat.sendButton.setEnabled(false);
+							}
+							else {
+								chat.sendButton.setEnabled(true);
+								chat.userListPane.setCurrentUser(0);
+							}
 							// 开始每1秒检查一下在线列表
 							timer.schedule(new CheckOnlineUserList(), 0, 1000);
 							
@@ -86,6 +97,50 @@ public class Start {
 					}
 				}
 			}
+		});
+		login.registButton.addActionListener(new ActionListener() {
+
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				// TODO Auto-generated method stub
+				login.setVisible(false);
+				regist.setVisible(true);
+			}
+			
+		});
+
+		// 登录按钮的响应函数
+		regist.loginButton.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				regist.setVisible(false);
+				login.setVisible(true);
+			}
+		});
+		//  注册按钮
+		regist.registButton.addActionListener(new ActionListener() {
+
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				String pwd = regist.pwdTextField.getText();
+				String pwdAgain = regist.pwdTextFieldAgain.getText();
+				String userName = regist.userNameTextField.getText();
+				if (!pwd.equals("") && pwd.equals(pwdAgain) && !userName.equals("")) {
+					try {
+						boolean flag = client.regist(userName, pwd, pwdAgain);
+						if (flag) { //  注册成功 关闭登录窗口 打开聊天窗口
+							login.setVisible(true);
+						}
+						else { // 登录失败 弹出提示框
+							JOptionPane.showMessageDialog(null, "Regist Fail", "Error", 0);
+						}
+					} catch (Exception e1) {
+						// TODO Auto-generated catch block
+						e1.printStackTrace();
+					}
+				}
+			}
+			
 		});
 
 		
@@ -106,7 +161,7 @@ public class Start {
 		
 		try {
 			client.sendP2PMessage(userName, message);
-			chat.addP2PTextMessage(chat.titleLabel.getText(), client.userName, "", message, ALIGN_TYPE.right);
+			chat.addP2PTextMessage(chat.titleLabel.getText(), client.userName, Util.getFormattedCurrentDateTime(), message, ALIGN_TYPE.right);
 			chat.messageSendTextArea.setText("");
 		} catch (IOException e1) {
 			// TODO Auto-generated catch block

@@ -11,6 +11,11 @@ import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
@@ -26,6 +31,7 @@ import Protocol.BeatProtocol;
 import Protocol.GetUserListProtocol;
 import Protocol.HelloProtocol;
 import Protocol.LoginProtocol;
+import Protocol.RegistProtocol;
 import Protocol.UserStatusUpdateProtocol;
 import Protocol.UserStatusUpdateProtocol.USER_STATUS_TYPE;
 
@@ -38,6 +44,18 @@ public class Server {
 	static Map<String, String> beatTime = new HashMap<String, String>();
 	
 	Timer timer = new Timer();
+	
+	private String databaseDriven = "com.mysql.jdbc.Driver";
+	private String databaseURL = "jdbc:mysql://localhost:3306/instantMessage?useSSL=false";
+	private String databaseUserName = "root";
+	private String databasePassword = "mysql";
+	private Connection dbConnection = null;
+	
+	
+	private void initDatabase() throws ClassNotFoundException, SQLException {
+		Class.forName(databaseDriven);
+		dbConnection = DriverManager.getConnection(databaseURL, databaseUserName, databasePassword);
+	}
 	
 //	private static void startTCPSocket() throws Exception {
 //		int serverPort = 6789;
@@ -78,6 +96,33 @@ public class Server {
 
 
 	private int checkUser(String name, String pwd) {
+		String sql = "SELECT * FROM users WHERE username='" + name + "' AND password='" + pwd + "'";
+		Statement statement;
+		try {
+			statement = dbConnection.createStatement();
+			ResultSet result = statement.executeQuery(sql);
+			result.last();
+			int count = result.getRow();
+			return count;
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			return 0;
+		}
+	}
+	
+	private int addUser(String name, String pwd) {
+		if (checkUser(name, pwd) > 0) return -2;
+		String sql = "INSERT INTO users (username, password) VALUES ('" + name + "', '" + pwd + "')";
+		Statement statement;
+		try {
+			statement = dbConnection.createStatement();
+			statement.executeUpdate(sql);
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			return -1;
+		}
 		return 0;
 	}
 	
@@ -89,7 +134,7 @@ public class Server {
 
 		int ret = checkUser(protocol.userName, protocol.pwd);
 		// userName and pwd are valid
-		if (ret == 0) {
+		if (ret == 1) {
 			// 保存用户的信息
 			userList.put(protocol.userName, userInfo);
 			LoginProtocol p = new LoginProtocol(PROTOCOL_MESSAGE_TYPE.LOGIN_SUCCESS);
@@ -99,15 +144,51 @@ public class Server {
 			updateOnlineList(genUserUpdateMessage(protocol.userName, USER_STATUS_TYPE.ONLINE));
 			// 保存新用户的socket，以后续向该用户发送消息
 			onlineUserList.put(protocol.userName, connectionSocket);
-			for(String key : onlineUserList.keySet()) {
-				System.out.println(key);
-			}
+			//for(String key : onlineUserList.keySet()) {
+			//	System.out.println(key);
+			//}
 			// 开始监测该用户的beat 每10s监测一次
 			timer.schedule(new CheckBeat(protocol.userName), 1000, 10000);
 			return status;
 		}
-		
-		return status;
+		else {
+			LoginProtocol p = new LoginProtocol(PROTOCOL_MESSAGE_TYPE.LOGIN_FAIL_NO_USERNAME);
+			return p.getContent();
+		}
+	}
+	
+	private String userRegist(String inFromClient, Socket connectionSocket) throws IOException {
+		RegistProtocol protocol = new RegistProtocol(inFromClient);
+		InetAddress IP = connectionSocket.getInetAddress();
+		String userName = protocol.userName;
+		String pwd = protocol.pwd;
+		String pwdAgain = protocol.pwdAgain;
+		RegistProtocol returnProtocol;
+		if (!pwd.equals(pwdAgain))  {
+			returnProtocol = new RegistProtocol(PROTOCOL_MESSAGE_TYPE.REGIST_FAIL_PASSWORD_MISMATCH);
+			return returnProtocol.getContent();
+		}
+
+		int ret = checkUser(protocol.userName, protocol.pwd);
+		// userName and pwd are valid, no username exist
+		if (ret == 0) {
+			int r = addUser(userName, pwd);
+			if (r == 0) {
+				returnProtocol = new RegistProtocol(PROTOCOL_MESSAGE_TYPE.REGIST_SUCCESS);
+				Util.log("Regist Success " + userName);
+				return returnProtocol.getContent();
+			}
+			else {
+				Util.log("Regist Fail " + userName);
+				returnProtocol = new RegistProtocol(PROTOCOL_MESSAGE_TYPE.REGIST_FAIL);
+				return returnProtocol.getContent();
+			}
+		}
+		else {
+			Util.log("username: " + userName + " already existed.");
+			returnProtocol = new RegistProtocol(PROTOCOL_MESSAGE_TYPE.REGIST_FAIL_EXIST_USERNAME);
+			return returnProtocol.getContent();
+		}
 	}
 	
 
@@ -126,7 +207,7 @@ public class Server {
 						while((clientSentence = inFromClient.readUTF()) == null
 								&& clientSentence.length() <= 0) {
 						}
-						Util.log("-----\n" + clientSentence + "-----");
+						// Util.log("-----\n" + clientSentence + "-----");
 						PROTOCOL_MESSAGE_TYPE state = Util.getAction(clientSentence);
 //						if (state == PROTOCOL_MESSAGE_TYPE.LOGIN_REQUEST) {
 //							LoginProtocol protocol = new LoginProtocol(clientSentence);
@@ -141,9 +222,14 @@ public class Server {
 							outToClient.flush();
 							break;
 						case LOGIN_REQUEST:
-							String content = userLogin(clientSentence, connectionSocket);
-							outToClient.writeUTF(content);
+							String loginContent = userLogin(clientSentence, connectionSocket);
+							outToClient.writeUTF(loginContent);
                             outToClient.flush();
+							break;
+						case REGIST_REQUEST:
+							String registContent = userRegist(clientSentence, connectionSocket);
+							outToClient.writeUTF(registContent);
+							outToClient.flush();
 							break;
 						case GET_USERLIST_REQUEST:
 							GetUserListProtocol protocol = new GetUserListProtocol(userList);
@@ -153,7 +239,7 @@ public class Server {
 							//keep beat
 							BeatProtocol beatProtocol = new BeatProtocol(clientSentence);
 				            userName = beatProtocol.userName;
-				            beatTime.put(userName,"YES");
+				            beatTime.put(userName, "YES");
 							break;
 						default:
 							break;
@@ -161,6 +247,7 @@ public class Server {
 						}
 					}
 				} catch(Exception e) {
+					beatTime.put(userName, "NO");
 					e.printStackTrace();
 				}
 			}
@@ -215,7 +302,6 @@ public class Server {
 					beatTime.put(userName, "NO");
 				}
 			} catch(Exception e) {
-				Util.log("Error");
 				e.printStackTrace();
 				userList.remove(userName);
 				//Socket failSocket = onlineUserList.get(userName);
@@ -224,6 +310,7 @@ public class Server {
 				String status;
 				try {
 					status = genUserUpdateMessage(userName, USER_STATUS_TYPE.OFFLINE);
+					Util.log(userName + " offline");
 					updateOnlineList(status);
 				} catch (Exception e1) {
 					// TODO Auto-generated catch block
@@ -240,6 +327,7 @@ public class Server {
 		// startUDPServer();
 		Util.log("start Server(TCP) in port: " + Util.SERVER_PORT);
 	    Server server = new Server();
+	    server.initDatabase();
 	    ServerSocket welcomeSocket = new ServerSocket(Util.SERVER_PORT);
 	    while(true){
 	        Socket connectionSocket = welcomeSocket.accept();

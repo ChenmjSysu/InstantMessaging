@@ -109,7 +109,7 @@ public class Client {
 	                    udpSocket.receive(dp);
 	    
 	                    String udpContent = new String(dp.getData(), 0, dp.getLength());
-	                    Util.log(udpContent);
+	                    // Util.log(udpContent);
                         udpProcess(udpSocket, udpContent);
                     }
                 }catch(IOException e){
@@ -126,7 +126,7 @@ public class Client {
         		try {
         			while(true) {
         				while((fromServer = inFromServer.readUTF())!=null && fromServer.length()>0) {
-        					Util.log(fromServer);
+        					// Util.log(fromServer);
         					PROTOCOL_MESSAGE_TYPE state = Util.getAction(fromServer);
     						switch (state) {
     						case LOGIN_SUCCESS:
@@ -137,7 +137,7 @@ public class Client {
     						case GET_USERLIST_SUCCESS:
     							UserList l = new UserList(fromServer);
     							userList = l.userList;
-    							startUI.chat.setList(userList);
+    							startUI.chat.setList(userList, userName);
     							break;
     						default:
     							Util.log("unknow protocol");
@@ -180,6 +180,38 @@ public class Client {
 						serverListen();
 						heartBeat(clientSocket);
 						getUserList();
+						return true;
+					}
+				}
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+		return false;
+	}
+	
+	// 发送注册消息 成功则返回true，返则false
+	public boolean regist(String name, String password, String passwordAgain) throws Exception {
+		if(connecting) {
+			// StartTCPListener();
+			// StartUDPListener();
+			try {
+				Util.log(name + " try to regist");
+				userName = name;
+				// while (localTCPPort == 0 || localUDPPort == 0) {}
+				RegistProtocol regist = new RegistProtocol(name, password, passwordAgain);
+				outToServer = new DataOutputStream(clientSocket.getOutputStream());
+				inFromServer = new DataInputStream(clientSocket.getInputStream());
+				outToServer.writeUTF(regist.getContent());
+				outToServer.flush();
+				
+				// wait for response
+				while((fromServer = inFromServer.readUTF()) == null && fromServer.length() <= 0) {
+						// do nothing
+				}
+				if (fromServer != null) {
+					PROTOCOL_MESSAGE_TYPE action = Util.getAction(fromServer);
+					if (action == PROTOCOL_MESSAGE_TYPE.REGIST_SUCCESS) {
 						return true;
 					}
 				}
@@ -238,6 +270,7 @@ public class Client {
 		else if (protocol.status == USER_STATUS_TYPE.OFFLINE) {
 			userList.remove(protocol.userName);
 			startUI.chat.removeUser(protocol.userName);
+			Util.log(userName + "  logout");
 		}
 		else {
 			Util.log("UserStatusUpdateProtocol type error");

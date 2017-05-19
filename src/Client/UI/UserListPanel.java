@@ -32,10 +32,12 @@ public class UserListPanel extends JPanel {
 		this.setBackground(Color.GRAY);
 	}
 	
-	public void setUserList(Map<String, String> userList) {
+	public void setUserList(Map<String, String> userList, String curName) {
 		for(String name : userList.keySet()) {
+			if (name.equals(curName)) {
+				continue;
+			}
 			this.addUser(name);
-			Util.log(name);
 		}
 		this.revalidate();
 	}
@@ -43,8 +45,9 @@ public class UserListPanel extends JPanel {
 	public void removeUser(String name) {
 		for (int i = 0; i < this.getComponentCount(); i++) {
 			User tempUser = (User) this.getComponent(i);
-			if (name != null && name == tempUser.name) {
-				tempUser.setBackground(Color.GREEN);
+			if (name != null && name.equals(tempUser.name)) {
+				// tempUser.setBackground(Color.GREEN);
+				this.remove(i);
 			}
 		}
 		
@@ -84,6 +87,8 @@ public class UserListPanel extends JPanel {
 			@Override
 			public void mouseClicked(MouseEvent e) {
 				// TODO Auto-generated method stub
+				setCurrentUser(((User)e.getSource()).name);
+				/*
 				UserListPanel listPanel = (UserListPanel)((User)e.getSource()).getParent();
 				
 				String cur = listPanel.cunrrentUser;
@@ -102,17 +107,68 @@ public class UserListPanel extends JPanel {
 						tempUser.haveNewMessage = false;
 					}
 				}
+				*/
 			}
 		});
 		this.revalidate();
 	}
 
+	public void setCurrentUser(String user) {
+		UserListPanel listPanel = this;
+		
+		String cur = listPanel.cunrrentUser;
+		for (int i = 0; i < listPanel.getComponentCount(); i++) {
+			User tempUser = (User) listPanel.getComponent(i);
+			if (cur != null && cur.equals(tempUser.name)) { //将之前的item设置为灰色
+				tempUser.setBackground(Color.GRAY);
+				listPanel.cunrrentUser = user;
+			}
+			else if (cur == null) {
+				tempUser.setBackground(Color.GRAY);
+				listPanel.cunrrentUser = user;
+			}
+			//将当前点击的设置为红色
+			if (user.equals(tempUser.name)) {
+				tempUser.setBackground(Color.RED);
+			}
+			if (tempUser.haveNewMessage == true) {
+				tempUser.setText(tempUser.name);
+				tempUser.haveNewMessage = false;
+			}
+		}
+		Util.log(user + "----");
+		chat.showCurrentUserMessage(listPanel.cunrrentUser);
+	}
+	public void setCurrentUser(int index) {
+		UserListPanel listPanel = this;
+		
+		String user = ((User) listPanel.getComponent(index)).name;
+		String cur = listPanel.cunrrentUser;
+		for (int i = 0; i < listPanel.getComponentCount(); i++) {
+			User tempUser = (User) listPanel.getComponent(i);
+			if (cur != null && cur == tempUser.name) { //将之前的item设置为灰色
+				tempUser.setBackground(Color.GRAY);
+				listPanel.cunrrentUser = user;
+			}
+			//将当前点击的设置为红色
+			if (user.equals(tempUser.name)) {
+				tempUser.setBackground(Color.RED);
+			}
+			chat.showCurrentUserMessage(listPanel.cunrrentUser);
+			if (tempUser.haveNewMessage == true) {
+				tempUser.setText(tempUser.name);
+				tempUser.haveNewMessage = false;
+			}
+		}
+	}
+	
 	public void setHaveNewMessage(String from) {
 		for (int i = 0; i < this.getComponentCount(); i++) {
 			User tempUser = (User) this.getComponent(i);
-			if (from != null && from == tempUser.name && tempUser.haveNewMessage == false) {
+			if (from != null && from.equals(tempUser.name) && tempUser.haveNewMessage == false) {
 				tempUser.setText(from + " (new message)");
 				tempUser.haveNewMessage = true;
+				this.revalidate();
 			}
 		}
 	}
@@ -130,6 +186,9 @@ public class UserListPanel extends JPanel {
 		
 		public void setText(String s) {
 			userNameLabel.setText(s);
+		}
+		public String getText() {
+			return userNameLabel.getText();
 		}
 	}
 }

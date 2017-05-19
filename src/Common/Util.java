@@ -9,13 +9,17 @@ public class Util {
 	public static String PROTOCAL_SP = " ";
 	public static String PROTOCAL_LINEEND = "\r\n";
 	
-	public static String LOGIN_WIN_TITLE = "Instant Message";
+	public static String LOGIN_WIN_TITLE = "Login[Instant Message]";
+	public static String REGIST_WIN_TITLE = "Regist[Instant Message]";
+	public static String CHAT_WIN_TITLE = "[Instant Message]";
 	
 	public static int LOGIN_WIN_WIDTH = 300;
 	public static int LOGIN_WIN_HEIGHT = 200;
+	public static int REGIST_WIN_WIDTH = 300;
+	public static int REGIST_WIN_HEIGHT = 300;
 	
 	public static String getFormattedCurrentDateTime() {
-		SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
+		SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd-hh:mm:ss");
 		Date currentDate = new Date(System.currentTimeMillis());
 		String dateStr = formatter.format(currentDate);
 		return dateStr;
