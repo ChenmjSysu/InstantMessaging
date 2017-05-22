@@ -47,10 +47,11 @@ public class UserListPanel extends JPanel {
 			User tempUser = (User) this.getComponent(i);
 			if (name != null && name.equals(tempUser.name)) {
 				// tempUser.setBackground(Color.GREEN);
+				Util.log("remove " + i);
 				this.remove(i);
 			}
 		}
-		
+		Util.log("" + this.getComponentCount());
 		this.revalidate();
 	}
 	

@@ -123,7 +123,7 @@ public class ChatRoom extends JFrame {
 		user2EditMessageList.remove(name);
 		user2SendMessageList.remove(name);
 		userListPane.removeUser(name);
-		userListPane.revalidate();
+		//userListPane.revalidate();
 	}
 	
 	public void addUser(String name) {

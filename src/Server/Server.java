@@ -291,6 +291,7 @@ public class Server {
 					userList.remove(userName);
 					//Socket failSocket = onlineUserList.get(userName);
 					beatTime.remove(userName);
+					Util.log(userName + "logout");
 					try {
 						updateOnlineList(status);
 					} catch(Exception e) {
@@ -310,7 +311,6 @@ public class Server {
 				String status;
 				try {
 					status = genUserUpdateMessage(userName, USER_STATUS_TYPE.OFFLINE);
-					Util.log(userName + " offline");
 					updateOnlineList(status);
 				} catch (Exception e1) {
 					// TODO Auto-generated catch block

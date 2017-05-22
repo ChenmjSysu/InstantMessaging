@@ -270,7 +270,7 @@ public class Client {
 		else if (protocol.status == USER_STATUS_TYPE.OFFLINE) {
 			userList.remove(protocol.userName);
 			startUI.chat.removeUser(protocol.userName);
-			Util.log(userName + "  logout");
+			Util.log(protocol.userName + "  logout");
 		}
 		else {
 			Util.log("UserStatusUpdateProtocol type error");
