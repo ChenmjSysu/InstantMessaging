@@ -16,7 +16,7 @@ public class Util {
 	public static int LOGIN_WIN_WIDTH = 300;
 	public static int LOGIN_WIN_HEIGHT = 200;
 	public static int REGIST_WIN_WIDTH = 300;
-	public static int REGIST_WIN_HEIGHT = 300;
+	public static int REGIST_WIN_HEIGHT = 200;
 	
 	public static String getFormattedCurrentDateTime() {
 		SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd-hh:mm:ss");

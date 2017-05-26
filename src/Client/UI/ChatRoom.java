@@ -74,9 +74,9 @@ public class ChatRoom extends JFrame {
 		this.setResizable(true);
 		// 居中显示
 		this.setLocationRelativeTo(null);
-		this.setVisible(true);
+		this.setVisible(false);
 		
-		// 初始化窗体组建
+		// 初始化窗体组件
 		init();
 		
 		user2EditMessageList = new HashMap<String, String>();
@@ -120,6 +120,17 @@ public class ChatRoom extends JFrame {
 	}
 	
 	public void removeUser(String name) {
+		if (name.equals(userListPane.cunrrentUser)) {
+			if (userListPane.getComponentCount() == 0) {
+				historyPanel.removeAll();
+				historyPanel.update();
+			}
+			titleLabel.setText("title");
+			messageSendTextArea.setText("");
+		}
+		else {
+			userListPane.setCurrentUser(0);
+		}
 		user2EditMessageList.remove(name);
 		user2SendMessageList.remove(name);
 		userListPane.removeUser(name);

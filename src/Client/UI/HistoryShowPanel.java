@@ -42,6 +42,12 @@ public class HistoryShowPanel extends JPanel {
 		this.add(i);
 	}
 	
+	public void update() {
+		this.updateUI();
+		this.repaint();
+		this.revalidate();
+	}
+	
 	class ShowItem extends JPanel {
 		MessageItem item;
 		JTextField userName;

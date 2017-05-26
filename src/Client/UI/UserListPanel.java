@@ -46,13 +46,15 @@ public class UserListPanel extends JPanel {
 		for (int i = 0; i < this.getComponentCount(); i++) {
 			User tempUser = (User) this.getComponent(i);
 			if (name != null && name.equals(tempUser.name)) {
-				// tempUser.setBackground(Color.GREEN);
-				Util.log("remove " + i);
+				//tempUser.setBackground(Color.GREEN);
+				//Util.log("remove " + i);
 				this.remove(i);
 			}
 		}
-		Util.log("" + this.getComponentCount());
+		//Util.log("" + this.getComponentCount());
 		this.revalidate();
+		this.updateUI();
+		this.repaint();
 	}
 	
 	// 增加一个用户
@@ -89,26 +91,6 @@ public class UserListPanel extends JPanel {
 			public void mouseClicked(MouseEvent e) {
 				// TODO Auto-generated method stub
 				setCurrentUser(((User)e.getSource()).name);
-				/*
-				UserListPanel listPanel = (UserListPanel)((User)e.getSource()).getParent();
-				
-				String cur = listPanel.cunrrentUser;
-				for (int i = 0; i < listPanel.getComponentCount(); i++) {
-					User tempUser = (User) listPanel.getComponent(i);
-					if (cur != null && cur == tempUser.name) { //将之前的item设置为灰色
-						tempUser.setBackground(Color.GRAY);
-					}
-					//将当前点击的设置为红色
-					((User)e.getSource()).setBackground(Color.RED);
-					listPanel.cunrrentUser = ((User)e.getSource()).name;
-			
-					chat.showCurrentUserMessage(listPanel.cunrrentUser);
-					if (tempUser.haveNewMessage == true) {
-						tempUser.setText(tempUser.name);
-						tempUser.haveNewMessage = false;
-					}
-				}
-				*/
 			}
 		});
 		this.revalidate();
@@ -130,7 +112,7 @@ public class UserListPanel extends JPanel {
 			}
 			//将当前点击的设置为红色
 			if (user.equals(tempUser.name)) {
-				tempUser.setBackground(Color.RED);
+				tempUser.setBackground(Color.ORANGE);
 			}
 			if (tempUser.haveNewMessage == true) {
 				tempUser.setText(tempUser.name);
@@ -142,7 +124,6 @@ public class UserListPanel extends JPanel {
 	}
 	public void setCurrentUser(int index) {
 		UserListPanel listPanel = this;
-		
 		String user = ((User) listPanel.getComponent(index)).name;
 		String cur = listPanel.cunrrentUser;
 		for (int i = 0; i < listPanel.getComponentCount(); i++) {
@@ -153,7 +134,7 @@ public class UserListPanel extends JPanel {
 			}
 			//将当前点击的设置为红色
 			if (user.equals(tempUser.name)) {
-				tempUser.setBackground(Color.RED);
+				tempUser.setBackground(Color.ORANGE);
 			}
 			chat.showCurrentUserMessage(listPanel.cunrrentUser);
 			if (tempUser.haveNewMessage == true) {
@@ -172,6 +153,12 @@ public class UserListPanel extends JPanel {
 				this.revalidate();
 			}
 		}
+	}
+	
+	public void update() {
+		this.updateUI();
+		this.repaint();
+		this.revalidate();
 	}
 	
 	class User extends JPanel {

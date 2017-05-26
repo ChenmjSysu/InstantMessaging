@@ -30,6 +30,7 @@ import java.awt.Toolkit;
 import Client.Client;
 import Client.UI.*;
 import Common.MessageItem.ALIGN_TYPE;
+import Common.PROTOCOL_MESSAGE_TYPE;
 import Common.Util;
 import javafx.scene.control.Alert.AlertType;
 
@@ -42,10 +43,15 @@ public class Start {
 	public ChatRoom chat;
 	
 	public static void main(String[] args) {
+		if (args[0].equals("-h")) {
+			System.out.println("Usage:");
+			System.out.println("\tServerPort ServerIP");
+			System.exit(0);
+		}
 		EventQueue.invokeLater(new Runnable() {
 			public void run() {
 				try {
-					Start object = new Start();
+					Start object = new Start(args);
 				} catch (Exception e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
@@ -54,10 +60,19 @@ public class Start {
 		});
 	}
 	
-	public Start() throws Exception {
-		client = new Client(this);
+	public Start(String[] args) throws Exception {
+		Util.log("init Client");
+		if (args.length >= 2) {
+			client = new Client(this, args[0], Integer.parseInt(args[1]));
+		}
+		else {
+			client = new Client(this);
+		}
+		Util.log("init Login UI");
 		login = new Login(this);
+		Util.log("init Regist UI");
 		regist = new Regist(this);
+		Util.log("init ChatRoom UI");
 		chat = new ChatRoom(this);
 		
 		chat.setVisible(false);
@@ -72,8 +87,8 @@ public class Start {
 				String userName = login.userNameTextField.getText();
 				if (!pwd.equals("") && !userName.equals("")) {
 					try {
-						boolean flag = client.login(userName, pwd);
-						if (flag) { // 登录成功 关闭登录窗口 打开聊天窗口
+						PROTOCOL_MESSAGE_TYPE flag = client.login(userName, pwd);
+						if (flag == PROTOCOL_MESSAGE_TYPE.LOGIN_SUCCESS) { // 登录成功 关闭登录窗口 打开聊天窗口
 							login.setVisible(false);
 							chat.setVisible(true);
 							chat.setTitle(client.userName + chat.getTitle());
@@ -87,6 +102,12 @@ public class Start {
 							// 开始每1秒检查一下在线列表
 							timer.schedule(new CheckOnlineUserList(), 0, 1000);
 							
+						}
+						else if (flag == PROTOCOL_MESSAGE_TYPE.LOGIN_FAIL_NO_USERNAME) {
+							JOptionPane.showMessageDialog(null, "Login Fail\nUserName not exist", "Error", 0);
+						}
+						else if (flag == PROTOCOL_MESSAGE_TYPE.LOGIN_FAIL_ERROR_PASSWORD) {
+							JOptionPane.showMessageDialog(null, "Login Fail\nPassword is incorrect", "Error", 0);
 						}
 						else { // 登录失败 弹出提示框
 							JOptionPane.showMessageDialog(null, "Login Fail", "Error", 0);
@@ -127,11 +148,19 @@ public class Start {
 				String userName = regist.userNameTextField.getText();
 				if (!pwd.equals("") && pwd.equals(pwdAgain) && !userName.equals("")) {
 					try {
-						boolean flag = client.regist(userName, pwd, pwdAgain);
-						if (flag) { //  注册成功 关闭登录窗口 打开聊天窗口
+						PROTOCOL_MESSAGE_TYPE flag = client.regist(userName, pwd, pwdAgain);
+						if (flag == PROTOCOL_MESSAGE_TYPE.REGIST_SUCCESS) { //  注册成功 关闭登录窗口 打开聊天窗口
+							JOptionPane.showMessageDialog(null, "Regist Success", "Success", JOptionPane. PLAIN_MESSAGE);
 							login.setVisible(true);
+							regist.setVisible(false);
 						}
-						else { // 登录失败 弹出提示框
+						else if (flag == PROTOCOL_MESSAGE_TYPE.REGIST_FAIL_EXIST_USERNAME) {
+							JOptionPane.showMessageDialog(null, "Regist Fail\nUsername Exist", "Error", 0);
+						}
+						else if (flag == PROTOCOL_MESSAGE_TYPE.REGIST_FAIL_PASSWORD_MISMATCH) { // 登录失败 弹出提示框
+							JOptionPane.showMessageDialog(null, "Regist Fail\nTwo Password is noy the same", "Error", 0);
+						}
+						else {
 							JOptionPane.showMessageDialog(null, "Regist Fail", "Error", 0);
 						}
 					} catch (Exception e1) {

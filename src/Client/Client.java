@@ -37,6 +37,9 @@ public class Client {
 	String localIP;
 	int localTCPPort;
 	int localUDPPort;
+	
+	public String serverIP;
+	public int serverPort;
 
 	Socket connectionSocket;
 	List onlineList = new LinkedList();
@@ -52,30 +55,37 @@ public class Client {
 	Timer p2pTimer = new Timer();
 	
 	// 向服务器发送hello消息，创建一个ServerSocket接受其他终端的消息
-	public boolean hello() throws Exception {
+	public boolean hello() {
 		// 与服务器的交互
-		clientSocket = new Socket(Util.SERVER_IP, Util.SERVER_PORT);
-		outToServer = new DataOutputStream(clientSocket.getOutputStream());
-		inFromServer = new DataInputStream(clientSocket.getInputStream());
-		InetAddress localAddress = InetAddress.getLocalHost();
-		localIP = localAddress.getHostAddress();
-		HelloProtocol hello = new HelloProtocol(Util.SERVER_IP, Util.SERVER_PORT);
-		welcomeSocket = new ServerSocket(0);
-		localTCPPort = welcomeSocket.getLocalPort();
-		outToServer.writeUTF(hello.getContent());
-		outToServer.flush();
-		while(true) {
-			fromServer = inFromServer.readUTF();
-			if (fromServer != null && fromServer.length() >= 0) {
-				PROTOCOL_MESSAGE_TYPE action = Util.getAction(fromServer);
-				if (action == PROTOCOL_MESSAGE_TYPE.HELLO) {
-					return true;
-				}
-				else {
-					Util.log("Connect Fail");
-					return false;
+		
+		try {
+			Util.log("Connect Server IP: " + serverIP + ", Port: " + serverPort);
+			clientSocket = new Socket(serverIP, serverPort);
+			outToServer = new DataOutputStream(clientSocket.getOutputStream());
+			inFromServer = new DataInputStream(clientSocket.getInputStream());
+			InetAddress localAddress = InetAddress.getLocalHost();
+			localIP = localAddress.getHostAddress();
+			HelloProtocol hello = new HelloProtocol(serverIP, serverPort);
+			welcomeSocket = new ServerSocket(0);
+			localTCPPort = welcomeSocket.getLocalPort();
+			outToServer.writeUTF(hello.getContent());
+			outToServer.flush();
+			while(true) {
+				fromServer = inFromServer.readUTF();
+				if (fromServer != null && fromServer.length() >= 0) {
+					PROTOCOL_MESSAGE_TYPE action = Util.getAction(fromServer);
+					if (action == PROTOCOL_MESSAGE_TYPE.HELLO) {
+						return true;
+					}
+					else {
+						Util.log("Connect Fail");
+						return false;
+					}
 				}
 			}
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			return false;
 		}
 	}
 	
@@ -154,7 +164,7 @@ public class Client {
 	}
 	
 	// 发送登录消息 成功则返回true，返则false
-	public boolean login(String name, String password) throws Exception {
+	public PROTOCOL_MESSAGE_TYPE login(String name, String password) throws Exception {
 		if(connecting) {
 			
 			StartTCPListener();
@@ -180,18 +190,18 @@ public class Client {
 						serverListen();
 						heartBeat(clientSocket);
 						getUserList();
-						return true;
 					}
+					return action;
 				}
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
 		}
-		return false;
+		return PROTOCOL_MESSAGE_TYPE.LOGIN_FAIL;
 	}
 	
-	// 发送注册消息 成功则返回true，返则false
-	public boolean regist(String name, String password, String passwordAgain) throws Exception {
+	// 发送注册消息
+	public PROTOCOL_MESSAGE_TYPE regist(String name, String password, String passwordAgain) throws Exception {
 		if(connecting) {
 			// StartTCPListener();
 			// StartUDPListener();
@@ -211,15 +221,13 @@ public class Client {
 				}
 				if (fromServer != null) {
 					PROTOCOL_MESSAGE_TYPE action = Util.getAction(fromServer);
-					if (action == PROTOCOL_MESSAGE_TYPE.REGIST_SUCCESS) {
-						return true;
-					}
+					return action;
 				}
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
 		}
-		return false;
+		return PROTOCOL_MESSAGE_TYPE.REGIST_FAIL;
 	}
 	
 	public void getUserList() throws IOException {
@@ -334,9 +342,30 @@ public class Client {
 		}
 	
 	public Client(Start s) throws Exception {
-		Util.log("Say hello to Server");
 		startUI = s;
+		this.serverIP = InetAddress.getLocalHost().getHostAddress();
+		this.serverPort = Util.SERVER_PORT;
 		connecting = hello();
+		if (connecting) {
+			Util.log("Connect Server Success.");
+		}
+		else {
+			Util.log("Connect Server Fail.");
+		}
+	}
+	
+	public Client(Start s, String ip, int p) throws Exception {
+		startUI = s;
+		this.serverIP = ip;
+		this.serverPort = p;
+		connecting = hello();
+		if (connecting) {
+			Util.log("Connect Server Success.");
+		}
+		else {
+			Util.log("Connect Server Fail.");
+			System.exit(1);
+		}
 	}
 	
 	public static void main(String args[]) throws Exception {
@@ -347,13 +376,14 @@ public class Client {
 			Util.log("Connect Success");
 			client.StartTCPListener();
 			userName = "chen";
-			if (client.login(userName, "pwd")) {
+			if (client.login(userName, "pwd") == PROTOCOL_MESSAGE_TYPE.LOGIN_SUCCESS) {
 //				client.serverListen();
 //				client.heartBeat(client.clientSocket);
 			}
 		}
 		else {
 			Util.log("Connect Fail");
+			System.exit(1);
 		}
 	}
 	

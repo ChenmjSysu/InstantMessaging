@@ -5,6 +5,7 @@ import java.awt.Container;
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
+import javax.swing.JPasswordField;
 import javax.swing.JTextField;
 
 import Common.Util;
@@ -13,9 +14,9 @@ public class Regist extends JFrame {
 	private JLabel userNameLabel;
 	public JTextField userNameTextField;
 	private JLabel pwdLabel;
-	public JTextField pwdTextField;
+	public JPasswordField pwdTextField;
 	private JLabel pwdLabelAgain;
-	public JTextField pwdTextFieldAgain;
+	public JPasswordField pwdTextFieldAgain;
 	
 	private JLabel bkg;
 	
@@ -47,25 +48,25 @@ public class Regist extends JFrame {
 		bkg.setBounds(0, 0, Util.REGIST_WIN_WIDTH, Util.REGIST_WIN_HEIGHT);
 		// 用户名
 		userNameLabel = new JLabel("User name");
-		userNameLabel.setBounds(10, 50, 70, 20);
+		userNameLabel.setBounds(10, 30, 100, 20);
 		userNameTextField = new JTextField();
-		userNameTextField.setBounds(100, 50, 150, 20);
+		userNameTextField.setBounds(130, 30, 150, 20);
 		// 密码
 		pwdLabel = new JLabel("Password");
-		pwdLabel.setBounds(10, 100, 70, 20);
-		pwdTextField = new JTextField();
-		pwdTextField.setBounds(100, 100, 150, 20);
-		pwdLabelAgain = new JLabel("PasswordAgain");
-		pwdLabelAgain.setBounds(10, 150, 70, 20);
-		pwdTextFieldAgain = new JTextField();
-		pwdTextFieldAgain.setBounds(100, 150, 150, 20);
+		pwdLabel.setBounds(10, 60, 100, 20);
+		pwdTextField = new JPasswordField();
+		pwdTextField.setBounds(130, 60, 150, 20);
+		pwdLabelAgain = new JLabel("Comfirm");
+		pwdLabelAgain.setBounds(10, 90, 100, 20);
+		pwdTextFieldAgain = new JPasswordField();
+		pwdTextFieldAgain.setBounds(130, 90, 150, 20);
 		
 		// 登陆按钮
 		loginButton = new JButton("Login");
-		loginButton.setBounds(20, 200, 65, 20);
+		loginButton.setBounds(20, 130, 65, 20);
 		// 注册按钮
 		registButton = new JButton("Regist");
-		registButton.setBounds(120, 200, 65, 20);
+		registButton.setBounds(120, 130, 65, 20);
 		
 		container.add(userNameLabel);
 		container.add(userNameTextField);

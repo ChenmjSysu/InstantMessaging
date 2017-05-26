@@ -5,12 +5,15 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.math.BigInteger;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
@@ -19,6 +22,7 @@ import java.sql.Statement;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -45,58 +49,36 @@ public class Server {
 	
 	Timer timer = new Timer();
 	
+	private int databasePort = 3306;
 	private String databaseDriven = "com.mysql.jdbc.Driver";
 	private String databaseURL = "jdbc:mysql://localhost:3306/instantMessage?useSSL=false";
 	private String databaseUserName = "root";
 	private String databasePassword = "mysql";
 	private Connection dbConnection = null;
 	
+	private int tcpPort;
+	private String tcpIp;
 	
-	private void initDatabase() throws ClassNotFoundException, SQLException {
-		Class.forName(databaseDriven);
-		dbConnection = DriverManager.getConnection(databaseURL, databaseUserName, databasePassword);
+	
+	private void initDatabase() {
+		try {
+			Class.forName(databaseDriven); 
+			dbConnection = DriverManager.getConnection(databaseURL, databaseUserName, databasePassword);
+		} catch (SQLException e) {
+			Util.log("Connect Database Fail.");
+			System.exit(1);
+		}
+		catch (ClassNotFoundException e) {
+			Util.log(databaseDriven + " ClassNotFoundException");
+			System.exit(1);
+		}
 	}
 	
-//	private static void startTCPSocket() throws Exception {
-//		int serverPort = 6789;
-//		String clientSentence;
-//		String modifiedSentence;
-//		ServerSocket welcomeSocket = new ServerSocket(serverPort);
-//		System.out.println("start Server(TCP) in port: " + serverPort);
-//		while(true) {
-//			Socket connectionSocket = welcomeSocket.accept();
-//			BufferedReader inFromClient = new BufferedReader(new InputStreamReader(connectionSocket.getInputStream()));
-//			DataOutputStream outToClient = new DataOutputStream(connectionSocket.getOutputStream());
-//			
-//			clientSentence = inFromClient.readLine();
-//			modifiedSentence = clientSentence.toUpperCase() + "\n";
-//			int a;
-//			outToClient.writeBytes(modifiedSentence);
-//		}
-//	}
-//	
-//	private static void startUDPServer() throws Exception {
-//		int serverPort = 9876;
-//		DatagramSocket serverSocket = new DatagramSocket(serverPort);
-//		byte[] receiveData = new byte[1024];
-//		byte[] sendData = new byte[1024];
-//		while(true) {
-//			DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
-//			serverSocket.receive(receivePacket);
-//			String sentence = new String(receivePacket.getData());
-//			InetAddress IPAddress = receivePacket.getAddress();
-//			int clientPort = receivePacket.getPort();
-//			String modifiedSentence = sentence.toUpperCase();
-//			sendData = modifiedSentence.getBytes();
-//			DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, IPAddress, clientPort);
-//			serverSocket.send(sendPacket);
-//		}
-//	}
-//	
-
-
-	private int checkUser(String name, String pwd) {
-		String sql = "SELECT * FROM users WHERE username='" + name + "' AND password='" + pwd + "'";
+	private int checkUser(String name, String pwd) throws NoSuchAlgorithmException {
+		MessageDigest md = MessageDigest.getInstance("MD5");
+		md.update(pwd.getBytes());
+		String pwdMd5 = new BigInteger(1, md.digest()).toString(16);
+		String sql = "SELECT * FROM users WHERE username='" + name + "' AND password='" + pwdMd5 + "'";
 		Statement statement;
 		try {
 			statement = dbConnection.createStatement();
@@ -111,9 +93,12 @@ public class Server {
 		}
 	}
 	
-	private int addUser(String name, String pwd) {
+	private int addUser(String name, String pwd) throws NoSuchAlgorithmException {
+		MessageDigest md = MessageDigest.getInstance("MD5");
+		md.update(pwd.getBytes());
+		String pwdMd5 = new BigInteger(1, md.digest()).toString(16);
 		if (checkUser(name, pwd) > 0) return -2;
-		String sql = "INSERT INTO users (username, password) VALUES ('" + name + "', '" + pwd + "')";
+		String sql = "INSERT INTO users (username, password) VALUES ('" + name + "', '" + pwdMd5 + "')";
 		Statement statement;
 		try {
 			statement = dbConnection.createStatement();
@@ -126,7 +111,7 @@ public class Server {
 		return 0;
 	}
 	
-	private String userLogin(String inFromClient, Socket connectionSocket) throws IOException {
+	private String userLogin(String inFromClient, Socket connectionSocket) throws IOException, NoSuchAlgorithmException {
 		String status = "";
 		LoginProtocol protocol = new LoginProtocol(inFromClient);
 		InetAddress IP = connectionSocket.getInetAddress();
@@ -157,7 +142,7 @@ public class Server {
 		}
 	}
 	
-	private String userRegist(String inFromClient, Socket connectionSocket) throws IOException {
+	private String userRegist(String inFromClient, Socket connectionSocket) throws IOException, NoSuchAlgorithmException {
 		RegistProtocol protocol = new RegistProtocol(inFromClient);
 		InetAddress IP = connectionSocket.getInetAddress();
 		String userName = protocol.userName;
@@ -217,7 +202,7 @@ public class Server {
 						case HELLO:
 							//handshake  say hello
 							Util.log("Get HELLO from " + connectionSocket.getInetAddress().getHostAddress());
-							HelloProtocol hello = new HelloProtocol(Util.SERVER_IP, Util.SERVER_PORT);
+							HelloProtocol hello = new HelloProtocol(tcpIp, tcpPort);
 							outToClient.writeUTF(hello.getContent());
 							outToClient.flush();
 							break;
@@ -323,12 +308,28 @@ public class Server {
 
 
 	public static void main(String args[]) throws Exception {
-		// startTCPSocket();
-		// startUDPServer();
-		Util.log("start Server(TCP) in port: " + Util.SERVER_PORT);
+		if (args[0].equals("-h")) {
+			System.out.println("Usage:");
+			System.out.println("\tTCPPort MysqlUsername MysqlPassword MysqlPort");
+			System.exit(0);
+		}
 	    Server server = new Server();
+	    server.tcpPort = Util.SERVER_PORT;
+	    server.tcpIp = InetAddress.getLocalHost().getHostAddress();
+	    if (args.length >= 4) {
+	    	// server.tcpIp = args[0];
+	    	server.tcpPort = Integer.parseInt(args[0]);
+	    	server.databaseUserName = args[1];
+	    	server.databasePassword = args[2];
+	    	server.databasePort = Integer.parseInt(args[3]);
+	    	server.databaseURL = "jdbc:mysql://localhost:" + args[3] + "/instantMessage?useSSL=false";
+	    }
+	    Util.log("start Server(TCP) in [ip:port]: " + server.tcpIp + ":" + server.tcpPort);
+	    Util.log("Mysql username: " + server.databaseUserName);
+	    Util.log("Mysql password: " + server.databasePassword);
+	    Util.log("Mysql port: " + server.databasePort);
 	    server.initDatabase();
-	    ServerSocket welcomeSocket = new ServerSocket(Util.SERVER_PORT);
+	    ServerSocket welcomeSocket = new ServerSocket(server.tcpPort);
 	    while(true){
 	        Socket connectionSocket = welcomeSocket.accept();
 	        server.process(connectionSocket);

@@ -21,7 +21,7 @@ public class Login extends JFrame {
 	private JLabel userNameLabel;
 	public JTextField userNameTextField;
 	private JLabel pwdLabel;
-	public JTextField pwdTextField;
+	public JPasswordField pwdTextField;
 	
 	private JLabel bkg;
 	
@@ -59,7 +59,7 @@ public class Login extends JFrame {
 		// 密码
 		pwdLabel = new JLabel("Password");
 		pwdLabel.setBounds(10, 100, 70, 20);
-		pwdTextField = new JTextField();
+		pwdTextField = new JPasswordField();
 		pwdTextField.setBounds(100, 100, 150, 20);
 		
 		// 登陆按钮
