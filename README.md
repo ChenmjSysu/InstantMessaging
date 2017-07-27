@@ -14,7 +14,9 @@ create table users(username varchar(100) not null, password varchar(100) not nul
 - 启动服务器
     启动服务器的时候需要指定4个参数，包括服务器用来与客户端连接的端口号、服务器端Mysql数据库的用户名、密码和端口。
     例如以下的启动方法，就是使用9876的端口与客户端连接，Mysql的用户名、密码和端口分别是root、mysql和3306。
-    java -jar server.jar 9876 root mysql 3306
+```    
+java -jar server.jar 9876 root mysql 3306
+```
     
 
 ### 客户端
