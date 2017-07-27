@@ -16,8 +16,8 @@ create table users(username varchar(100) not null, password varchar(100) not nul
     
 
 ### 客户端
-    与启动服务器类似，启动客户端需要提供2个参数，包括服务器端的IP和使用的端口。
-    例如，可以按照以下的方式启动客户端。
-    java -jar client.jar 127.0.0.1 9876
+- 与启动服务器类似，启动客户端需要提供2个参数，包括服务器端的IP和使用的端口。
+例如，可以按照以下的方式启动客户端。
+java -jar client.jar 127.0.0.1 9876
 
 
